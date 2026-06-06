@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BloomCast — HAB Risk Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+:root{--abyss:#05111a;--panel:rgba(13,38,50,.66);--panel2:rgba(9,28,38,.8);--line:rgba(45,212,191,.14);
+ --line2:rgba(45,212,191,.30);--cyan:#2dd4bf;--cyan-b:#34e6d4;--text:#d6e8ee;--muted:#6f8c99;--muted2:#52707d;
+ --low:#34d399;--mid:#fbbf24;--high:#fb5e6d}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',system-ui,sans-serif;color:var(--text);background:var(--abyss);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+.ambient{position:fixed;inset:0;z-index:-2;background:
+ radial-gradient(900px 500px at 78% -8%,rgba(45,212,191,.10),transparent 60%),
+ radial-gradient(800px 600px at 6% 108%,rgba(34,114,160,.14),transparent 55%),
+ linear-gradient(180deg,#05111a,#06151f 55%,#04101a)}
+.ambient::after{content:"";position:absolute;inset:0;opacity:.4;background-image:radial-gradient(rgba(45,212,191,.05) 1px,transparent 1px);background-size:34px 34px;mask:linear-gradient(180deg,transparent,#000 25%,#000 75%,transparent)}
+.wrap{max-width:1340px;margin:0 auto;padding:24px 24px 64px}
+header{display:flex;align-items:center;justify-content:space-between;gap:20px;padding-bottom:18px;border-bottom:1px solid var(--line);margin-bottom:18px;opacity:0;animation:rise .6s .03s forwards}
+.brand{display:flex;align-items:center;gap:13px}
+.mark{width:40px;height:40px;border-radius:11px;position:relative;flex:none;background:radial-gradient(circle at 32% 30%,#3ef0db,#0b8f86 60%,#075c57);box-shadow:0 0 0 1px rgba(62,240,219,.25),0 8px 26px rgba(11,143,134,.4)}
+.mark::after{content:"";position:absolute;inset:0;border-radius:11px;background:repeating-linear-gradient(115deg,transparent 0 6px,rgba(5,17,26,.35) 6px 7px)}
+.wordmark{font-family:'Sora';font-weight:800;font-size:1.4rem;letter-spacing:-.02em;color:#eafbf8}
+.wordmark span{color:var(--cyan)}
+.tag{color:var(--muted);font-size:.8rem;margin-top:1px;max-width:430px;line-height:1.35}
+.badge{display:flex;gap:16px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.kpi{text-align:right}.kpi .v{font-family:'IBM Plex Mono';font-weight:600;font-size:1.2rem;color:var(--cyan-b);line-height:1}
+.kpi .l{font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:5px}
+.control{display:flex;align-items:center;gap:16px;padding:14px 18px;margin-bottom:16px;background:var(--panel);border:1px solid var(--line);border-radius:14px;backdrop-filter:blur(9px);flex-wrap:wrap;opacity:0;animation:rise .6s .1s forwards}
+.sel{display:flex;flex-direction:column;gap:4px}
+.sel label{font-size:.6rem;letter-spacing:.13em;text-transform:uppercase;color:var(--muted2)}
+.sel select{background:#0c2330;color:var(--text);border:1px solid var(--line2);border-radius:9px;padding:8px 12px;font-family:'IBM Plex Sans';font-size:.9rem;cursor:pointer;min-width:170px}
+.datebox{flex:none;min-width:120px}.datebox .dm{font-family:'Sora';font-weight:700;font-size:1.4rem;color:#eafbf8}
+.datebox .yr{font-family:'IBM Plex Mono';color:var(--muted);font-size:.72rem;letter-spacing:.08em}
+.slider-wrap{flex:1;min-width:240px;display:flex;flex-direction:column;gap:6px}
+.slider-top{display:flex;justify-content:space-between;font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted2)}
+input[type=range]{-webkit-appearance:none;width:100%;height:5px;border-radius:6px;background:linear-gradient(90deg,#1d4350,#2a6b66);outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:17px;height:17px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#5ff5e4,#0fa99c);box-shadow:0 0 0 4px rgba(45,212,191,.18),0 3px 10px rgba(0,0,0,.5)}
+.play{flex:none;width:44px;height:44px;border-radius:11px;border:1px solid var(--line2);background:rgba(45,212,191,.08);color:var(--cyan-b);font-size:.95rem;cursor:pointer;display:grid;place-items:center;transition:.2s}
+.play:hover{background:rgba(45,212,191,.16)}
+.network{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px;opacity:0;animation:rise .6s .16s forwards}
+.scard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 13px;cursor:pointer;transition:.18s;position:relative;overflow:hidden}
+.scard:hover{border-color:var(--line2);transform:translateY(-2px)}
+.scard.active{border-color:var(--cyan);box-shadow:0 0 0 1px var(--cyan),0 10px 30px rgba(45,212,191,.12)}
+.scard .nm{font-size:.74rem;color:var(--muted);line-height:1.25;height:2.5em;overflow:hidden}
+.scard .rk{font-family:'IBM Plex Mono';font-weight:600;font-size:1.7rem;margin-top:6px;line-height:1}
+.scard .bd{font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;margin-top:3px}
+.grid{display:grid;grid-template-columns:330px 1fr;gap:16px;margin-bottom:16px}
+.grid2{display:grid;grid-template-columns:1fr 360px;gap:16px;margin-bottom:16px}
+.col{display:flex;flex-direction:column;gap:16px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;backdrop-filter:blur(9px);padding:16px 18px;opacity:0;animation:rise .6s .22s forwards}
+.ptitle{font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:11px;display:flex;align-items:center;gap:8px;justify-content:space-between}
+.ptitle .lead{display:flex;align-items:center;gap:8px}
+.ptitle .lead::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
+#gauge{height:185px;margin-top:-6px}
+.band{text-align:center;margin-top:-4px}.band .lab{font-family:'Sora';font-weight:700;font-size:1rem;letter-spacing:.04em}
+.readout{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);display:flex;justify-content:space-between;align-items:baseline}
+.readout .k{font-size:.76rem;color:var(--muted)}.readout .val{font-family:'IBM Plex Mono';font-weight:600;font-size:1rem}
+.readout .val.dim{color:var(--muted2);font-size:.8rem;font-weight:400}
+.drow{margin:10px 0}.drow .dl{display:flex;justify-content:space-between;font-size:.76rem;margin-bottom:5px}
+.drow .dl .vv{font-family:'IBM Plex Mono';color:var(--muted)}
+.dbar{height:7px;background:rgba(255,255,255,.05);border-radius:6px;position:relative;overflow:hidden}
+.dfill{position:absolute;top:0;height:100%;border-radius:6px;transition:.5s}
+.dmid{position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:rgba(255,255,255,.14)}
+#timeline{height:285px}
+#map{height:340px;border-radius:11px;overflow:hidden}.leaflet-container{background:#06141d!important}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:.72rem;color:var(--muted)}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+table{width:100%;border-collapse:collapse;font-size:.8rem}
+th{text-align:left;color:var(--muted2);font-weight:500;font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;padding:7px 8px;border-bottom:1px solid var(--line)}
+td{padding:8px;border-bottom:1px solid rgba(255,255,255,.04);font-family:'IBM Plex Mono';font-size:.8rem}
+.tbl-wrap{max-height:300px;overflow-y:auto}
+.chip{padding:2px 8px;border-radius:999px;font-size:.68rem;font-weight:600}
+.field{margin:12px 0}.field label{font-size:.74rem;color:var(--muted);display:block;margin-bottom:6px}
+.field input[type=number]{width:100%;background:#0c2330;border:1px solid var(--line2);border-radius:9px;color:var(--text);padding:9px 12px;font-family:'IBM Plex Mono';font-size:.95rem}
+.bignum{font-family:'IBM Plex Mono';font-weight:600;font-size:1.7rem;margin-top:4px}
+.note{font-size:.68rem;color:var(--muted2);margin-top:6px;line-height:1.4}
+.alertbox{padding:13px 15px;border-radius:11px;margin-top:8px;font-weight:600;font-size:.92rem;display:flex;align-items:center;gap:9px}
+.sys{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;font-size:.8rem}
+.sysrow{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.sysrow .k{color:var(--muted)}.sysrow .v{font-family:'IBM Plex Mono'}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--low);box-shadow:0 0 8px var(--low);margin-right:6px}
+footer{margin-top:18px;padding:18px 22px;background:var(--panel);border:1px solid var(--line);border-radius:14px;font-size:.84rem;color:var(--muted);line-height:1.6}
+footer b{color:var(--text)}footer .hl{color:var(--cyan-b)}
+@keyframes rise{from{opacity:0;transform:translateY(13px)}to{opacity:1;transform:none}}
+@media(max-width:1000px){.grid,.grid2{grid-template-columns:1fr}.network{grid-template-columns:repeat(3,1fr)}.tag{display:none}}
+</style>
+</head>
+<body>
+<div class="ambient"></div>
+<div class="wrap">
+  <header>
+    <div class="brand"><div class="mark"></div><div>
+      <div class="wordmark">Bloom<span>Cast</span></div>
+      <div class="tag">Harmful-algal-bloom risk intelligence for coastal operators — one live signal across a monitoring network.</div>
+    </div></div>
+    <div class="badge">
+      <div class="kpi"><div class="v" id="kAuc">0.91</div><div class="l">AUC · 2018 held out</div></div>
+      <div class="kpi"><div class="v" id="kSites">6</div><div class="l">Monitored sites</div></div>
+      <div class="kpi"><div class="v" id="kSamples">—</div><div class="l">Lab samples</div></div>
+      <div class="kpi"><div class="v" id="kSrc">2</div><div class="l">Sources fused</div></div>
+    </div>
+  </header>
+
+  <div class="control">
+    <div class="sel"><label>Operator site</label><select id="siteSel"></select></div>
+    <div class="sel"><label>Season</label><select id="yearSel"></select></div>
+    <div class="datebox"><div class="dm" id="dm">Aug 1</div><div class="yr" id="yrLab">2018</div></div>
+    <div class="slider-wrap"><div class="slider-top"><span>Replay</span><span id="dayCount"></span></div>
+      <input type="range" id="scrub" min="0" max="364" value="212"></div>
+    <button class="play" id="play" title="Play / pause">&#9654;</button>
+  </div>
+
+  <div class="network" id="network"></div>
+
+  <div class="grid">
+    <div class="col">
+      <div class="panel"><div class="ptitle"><span class="lead">Site risk score</span></div>
+        <div id="gauge"></div><div class="band"><span class="lab" id="bandLab">&mdash;</span></div>
+        <div class="readout"><span class="k">Latest lab sample</span><span class="val" id="sampleVal">&mdash;</span></div>
+        <div class="readout" style="border:none;padding-top:8px;margin-top:6px"><span class="k">Water temp</span><span class="val" id="wtmpVal">&mdash;</span></div>
+      </div>
+      <div class="panel"><div class="ptitle"><span class="lead">Why the risk is here</span></div><div id="drivers"></div></div>
+    </div>
+    <div class="col">
+      <div class="panel"><div class="ptitle"><span class="lead" id="tlTitle">Risk signal vs. real bloom</span></div><div id="timeline"></div></div>
+      <div class="panel"><div class="ptitle"><span class="lead">Observed bloom &mdash; prior 7 days</span></div><div id="map"></div>
+        <div class="legend"><span><i style="background:#5b7886"></i>background</span><span><i style="background:#2bb6a0"></i>very low</span><span><i style="background:#fbbf24"></i>low</span><span><i style="background:#fb923c"></i>medium</span><span><i style="background:#fb5e6d"></i>high &middot; closure</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="panel"><div class="ptitle"><span class="lead">Recent lab samples</span><span id="tblMeta" style="font-size:.66rem;color:var(--muted2)"></span></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Cells/L</th><th>Level</th></tr></thead><tbody id="tbody"></tbody></table></div>
+    </div>
+    <div class="col">
+      <div class="panel"><div class="ptitle"><span class="lead">Exposure estimator</span><span style="font-size:.6rem;color:var(--muted2)">PLANNING</span></div>
+        <div class="field"><label>Harvest / asset value at this site (USD)</label><input type="number" id="assetVal" value="500000" step="50000"></div>
+        <div><span class="note">Estimated value at risk at current level</span><div class="bignum" id="exposure">&mdash;</div></div>
+        <div class="note">Illustrative: asset value &times; closure-loss factor by risk band (low 3% &middot; elevated 18% &middot; high 45%). A planning aid, not a guarantee.</div>
+      </div>
+      <div class="panel"><div class="ptitle"><span class="lead">Alert threshold</span></div>
+        <div class="slider-top" style="margin-bottom:6px"><span style="color:var(--muted)">Notify above</span><span id="thrVal" style="font-family:'IBM Plex Mono';color:var(--cyan-b)">70</span></div>
+        <input type="range" id="thr" min="0" max="100" value="70">
+        <div class="alertbox" id="alertBox"></div>
+        <div class="note" id="alertDays"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel"><div class="ptitle"><span class="lead">Data &amp; system</span><span style="font-size:.66rem;color:var(--low)"><span class="dot"></span>operational</span></div>
+    <div class="sys">
+      <div><div class="sysrow"><span class="k">FWC HAB Database</span><span class="v" id="sysFwc">&mdash;</span></div>
+        <div class="sysrow"><span class="k">NDBC Buoy 42013 (winds/temp)</span><span class="v">2015&ndash;2023</span></div>
+        <div class="sysrow"><span class="k">Network coverage</span><span class="v">6 sites &middot; 9 seasons</span></div></div>
+      <div><div class="sysrow"><span class="k">Model</span><span class="v">Logistic regression</span></div>
+        <div class="sysrow"><span class="k">Validation</span><span class="v">2018 held out &middot; AUC <span id="sysAuc">0.91</span></span></div>
+        <div class="sysrow"><span class="k">Training days</span><span class="v" id="sysTrain">&mdash;</span></div></div>
+    </div>
+  </div>
+
+  <footer><b>What this is:</b> a unified, multi-site HAB <b>risk-monitoring</b> network &mdash; fusing fragmented public data (FWC <i>Karenia brevis</i> counts + NDBC shelf-buoy winds/temperature) into one continuous daily signal per site, filling gaps between sparse lab samples. Validated on <span class="hl">2018 held entirely out of training (AUC 0.91)</span>. &nbsp;<b>Not yet:</b> a long-range forecaster from clean water &mdash; that's the frontier, and it needs the integrated, ground-truthed dataset BloomCast accumulates. <b>That dataset is the moat.</b></footer>
+</div>
+
+<script>
+const DATA=/*__DATA__*/;
+const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DK=DATA.driverKeys, meta=DATA.meta;
+let state={site:'sarasota',year:2018,idx:212};
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const riskCol=v=>v<40?css('--low'):v<70?css('--mid'):css('--high');
+const fmt=n=>n==null?'&mdash;':n.toLocaleString('en-US');
+const mmdd=s=>{const a=s.split('-');return M[+a[0]-1]+' '+(+a[1])};
+function cat(c){return c<1e3?['background','#5b7886']:c<1e4?['very low','#2bb6a0']:c<1e5?['low','#fbbf24']:c<1e6?['medium','#fb923c']:['high · closure','#fb5e6d']}
+const series=(s,y)=>DATA.series[s][String(y)];
+
+document.getElementById('kAuc').textContent=meta.auc.toFixed(2);
+document.getElementById('kSamples').textContent=(meta.n_samples/1000).toFixed(0)+'k';
+document.getElementById('sysAuc').textContent=meta.auc.toFixed(2);
+document.getElementById('sysTrain').textContent=meta.n_train_days.toLocaleString('en-US');
+document.getElementById('sysFwc').textContent=meta.n_samples.toLocaleString('en-US')+' samples';
+
+const siteSel=document.getElementById('siteSel'),yearSel=document.getElementById('yearSel');
+DATA.sites.forEach(s=>siteSel.add(new Option(s.name,s.id)));
+DATA.years.forEach(y=>yearSel.add(new Option(y,y)));
+siteSel.value=state.site; yearSel.value=state.year;
+siteSel.onchange=()=>{state.site=siteSel.value;clampIdx();renderAll()};
+yearSel.onchange=()=>{state.year=+yearSel.value;clampIdx();renderAll()};
+function clampIdx(){const L=series(state.site,state.year).length;if(state.idx>=L)state.idx=L-1;document.getElementById('scrub').max=L-1}
+
+const gauge=echarts.init(document.getElementById('gauge'));
+const tl=echarts.init(document.getElementById('timeline'));
+const map=L.map('map',{zoomControl:true,attributionControl:false}).setView([26.9,-82.2],7);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:12}).addTo(map);
+let mLayer=L.layerGroup().addTo(map);
+
+function renderGauge(v){const c=riskCol(v);gauge.setOption({series:[{type:'gauge',min:0,max:100,radius:'94%',center:['50%','62%'],startAngle:210,endAngle:-30,progress:{show:true,width:12,roundCap:true,itemStyle:{color:c,shadowBlur:14,shadowColor:c}},axisLine:{lineStyle:{width:12,color:[[1,'rgba(255,255,255,.07)']]}},pointer:{show:false},axisTick:{show:false},splitLine:{show:false},axisLabel:{distance:-2,color:'#52707d',fontSize:9,fontFamily:'IBM Plex Mono'},detail:{valueAnimation:true,offsetCenter:[0,'4%'],fontSize:42,fontWeight:700,fontFamily:'IBM Plex Mono',color:c,formatter:x=>Math.round(x)},data:[{value:v}]}]},true)}
+
+function renderTimeline(){const S=series(state.site,state.year);const dates=S.map(r=>mmdd(r.d));const risk=S.map(r=>r.risk);const obs=S.map(r=>r.max==null?null:+(Math.log10(r.max+1)/8*100).toFixed(1));
+ tl.setOption({grid:{left:36,right:12,top:22,bottom:24},legend:{data:['Risk','Observed K. brevis'],top:0,right:0,textStyle:{color:'#6f8c99',fontSize:11},itemWidth:13,itemHeight:8},tooltip:{trigger:'axis',backgroundColor:'#0c2330',borderColor:'rgba(45,212,191,.25)',textStyle:{color:'#d6e8ee',fontFamily:'IBM Plex Mono',fontSize:11}},xAxis:{type:'category',data:dates,boundaryGap:false,axisLine:{lineStyle:{color:'rgba(255,255,255,.12)'}},axisLabel:{color:'#52707d',fontSize:10,interval:30},axisTick:{show:false}},yAxis:{type:'value',min:0,max:105,splitLine:{lineStyle:{color:'rgba(255,255,255,.05)'}},axisLabel:{color:'#52707d',fontSize:10}},series:[{name:'Risk',type:'line',data:risk,smooth:.4,symbol:'none',lineStyle:{color:'#2dd4bf',width:2.3,shadowBlur:10,shadowColor:'rgba(45,212,191,.5)'},areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(45,212,191,.26)'},{offset:1,color:'rgba(45,212,191,.01)'}])},markLine:{symbol:'none',silent:true,data:[{xAxis:state.idx}],lineStyle:{color:'#eafbf8',width:1.3,type:'dashed'},label:{show:false}}},{name:'Observed K. brevis',type:'scatter',data:obs,symbolSize:5,itemStyle:{color:'rgba(251,94,109,.6)'}}]},true)}
+
+function renderMap(){const S=series(state.site,state.year);const doy=S[state.idx].doy;const pts=DATA.points[String(state.year)];mLayer.clearLayers();const siteIdx=DATA.sites.findIndex(s=>s.id===state.site);
+ for(const p of pts){if(p[1]>=doy-6&&p[1]<=doy){const cc=cat(p[4]);const r=Math.max(3,Math.min(15,Math.log10(p[4]+1)*2));const emph=p[0]===siteIdx;L.circleMarker([p[2],p[3]],{radius:r,color:cc[1],weight:emph?2:1,fillColor:cc[1],fillOpacity:emph?.7:.4}).bindTooltip(p[4].toLocaleString('en-US')+' cells/L · '+cc[0]).addTo(mLayer)}}
+ const s=DATA.sites[siteIdx];L.circleMarker([s.lat,s.lon],{radius:5,color:'#eafbf8',weight:2,fillColor:'#2dd4bf',fillOpacity:.9}).bindTooltip(s.name+' (your site)').addTo(mLayer)}
+
+function renderDrivers(dr){const max=Math.max(1,...dr.map(Math.abs));let h='';dr.forEach((v,i)=>{const pct=Math.abs(v)/max*50;const pos=v>=0;const col=pos?'#fb5e6d':'#4a90d9';const left=pos?50:50-pct;h+='<div class="drow"><div class="dl"><span>'+DK[i]+'</span><span class="vv">'+(v>0?'+':'')+v.toFixed(2)+'</span></div><div class="dbar"><div class="dmid"></div><div class="dfill" style="left:'+left+'%;width:'+pct+'%;background:'+col+'"></div></div></div>'});document.getElementById('drivers').innerHTML=h}
+
+function renderTable(){const S=series(state.site,state.year);const doy=S[state.idx].doy;const rows=S.filter(r=>r.obs!=null&&r.doy<=doy).slice(-12).reverse();let h='';for(const r of rows){const cc=cat(r.max);h+='<tr><td>'+mmdd(r.d)+'</td><td>'+r.max.toLocaleString('en-US')+'</td><td><span class="chip" style="background:'+cc[1]+'22;color:'+cc[1]+'">'+cc[0]+'</span></td></tr>'}document.getElementById('tbody').innerHTML=h||'<tr><td colspan=3 style="color:#52707d">No samples yet this season</td></tr>';document.getElementById('tblMeta').textContent=DATA.sites.find(s=>s.id===state.site).name}
+
+function renderNetwork(){const net=document.getElementById('network');net.innerHTML='';DATA.sites.forEach(s=>{const arr=series(s.id,state.year);const r=arr[Math.min(state.idx,arr.length-1)];const v=r.risk==null?0:r.risk;const col=riskCol(v);const band=v<40?'low':v<70?'elevated':'high';const d=document.createElement('div');d.className='scard'+(s.id===state.site?' active':'');d.innerHTML='<div class="nm">'+s.name+'</div><div class="rk" style="color:'+col+'">'+Math.round(v)+'</div><div class="bd" style="color:'+col+'">'+band+'</div>';d.onclick=()=>{state.site=s.id;siteSel.value=s.id;renderAll()};net.appendChild(d)})}
+
+function renderExposure(risk){const v=+document.getElementById('assetVal').value||0;const f=risk<40?.03:risk<70?.18:.45;const ex=v*f;const el=document.getElementById('exposure');el.textContent='$'+Math.round(ex).toLocaleString('en-US');el.style.color=riskCol(risk)}
+
+function renderAlert(risk){const thr=+document.getElementById('thr').value;document.getElementById('thrVal').textContent=thr;const box=document.getElementById('alertBox');const on=risk>=thr;box.style.background=on?'rgba(251,94,109,.14)':'rgba(52,211,153,.12)';box.style.color=on?'#fb5e6d':'#34d399';box.innerHTML=(on?'&#9888; ':'&#10003; ')+(on?'ALERT — risk '+Math.round(risk)+' \u2265 '+thr:'Normal — risk '+Math.round(risk)+' below '+thr);const S=series(state.site,state.year);const days=S.filter(r=>r.risk!=null&&r.risk>=thr).length;document.getElementById('alertDays').textContent='Days above threshold this season: '+days}
+
+function renderAll(){const S=series(state.site,state.year);const r=S[state.idx];document.getElementById('dm').textContent=mmdd(r.d);document.getElementById('yrLab').textContent=state.year+' · '+DATA.sites.find(s=>s.id===state.site).name.toUpperCase();document.getElementById('dayCount').textContent='day '+(state.idx+1)+' / '+S.length;document.getElementById('scrub').value=state.idx;
+ const v=r.risk==null?0:r.risk;const band=v<40?['LOW','--low']:v<70?['ELEVATED','--mid']:['HIGH','--high'];const bl=document.getElementById('bandLab');bl.textContent='RISK: '+band[0];bl.style.color=css(band[1]);
+ document.getElementById('sampleVal').innerHTML=r.obs==null?'<span class="val dim">no sample · nowcast</span>':r.obs.toLocaleString('en-US')+' <span style="font-size:.7rem;color:#52707d">cells/L</span>';
+ document.getElementById('wtmpVal').textContent=r.wtmp==null?'—':r.wtmp.toFixed(1)+' °C';
+ document.getElementById('tlTitle').textContent=(state.year===2018?'Risk vs. real bloom — 2018 (held out)':'Risk vs. real bloom — '+state.year);
+ renderGauge(v);renderTimeline();renderMap();renderDrivers(r.dr||[0,0,0,0,0]);renderTable();renderNetwork();renderExposure(v);renderAlert(v);}
+
+document.getElementById('scrub').oninput=e=>{state.idx=+e.target.value;renderAll()};
+document.getElementById('assetVal').oninput=()=>{const r=series(state.site,state.year)[state.idx];renderExposure(r.risk==null?0:r.risk)};
+document.getElementById('thr').oninput=()=>{const r=series(state.site,state.year)[state.idx];renderAlert(r.risk==null?0:r.risk)};
+let playing=false,timer=null;const pb=document.getElementById('play');
+pb.onclick=()=>{playing=!playing;pb.innerHTML=playing?'&#10074;&#10074;':'&#9654;';if(playing){timer=setInterval(()=>{const L=series(state.site,state.year).length;state.idx=(state.idx+2)%L;renderAll()},80)}else clearInterval(timer)};
+window.addEventListener('resize',()=>{gauge.resize();tl.resize();map.invalidateSize()});
+clampIdx();renderAll();
+setTimeout(()=>{gauge.resize();tl.resize();map.invalidateSize()},300);
+</script>
+</body>
+</html>

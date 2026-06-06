@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BloomCast — HAB Risk Intelligence for Coastal Operators</title>
+<meta name="description" content="Unified, multi-site harmful algal bloom risk monitoring built from public oceanographic data. One continuous daily signal for shellfish farms, desalination intakes, and coastal operators.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--abyss:#05111a;--panel:rgba(13,38,50,.66);--panel2:rgba(9,28,38,.8);--line:rgba(45,212,191,.14);
+ --line2:rgba(45,212,191,.30);--cyan:#2dd4bf;--cyan-b:#34e6d4;--text:#d6e8ee;--muted:#6f8c99;--muted2:#52707d;
+ --low:#34d399;--mid:#fbbf24;--high:#fb5e6d}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',system-ui,sans-serif;color:var(--text);background:var(--abyss);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+.ambient{position:fixed;inset:0;z-index:-2;background:
+ radial-gradient(900px 500px at 78% -8%,rgba(45,212,191,.10),transparent 60%),
+ radial-gradient(800px 600px at 6% 108%,rgba(34,114,160,.14),transparent 55%),
+ linear-gradient(180deg,#05111a,#06151f 55%,#04101a)}
+.ambient::after{content:"";position:absolute;inset:0;opacity:.4;
+ background-image:radial-gradient(rgba(45,212,191,.05) 1px,transparent 1px);
+ background-size:34px 34px;
+ mask:linear-gradient(180deg,transparent,#000 25%,#000 75%,transparent)}
+
+/* ── Layout ────────────────────────────────────────── */
+.wrap{max-width:880px;margin:0 auto;padding:0 24px}
+section{padding:80px 0}
+section.hero{padding:120px 0 80px}
+
+/* ── Typography ────────────────────────────────────── */
+.eyebrow{font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;
+ display:flex;align-items:center;gap:9px}
+.eyebrow::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
+h2{font-family:'Sora',sans-serif;font-weight:700;font-size:1.55rem;color:#eafbf8;line-height:1.3;margin-bottom:18px;letter-spacing:-.01em}
+p{line-height:1.7;color:var(--text);margin-bottom:16px;font-size:.95rem}
+p.muted{color:var(--muted);font-size:.88rem}
+
+/* ── Dividers ──────────────────────────────────────── */
+.divider{border:none;border-top:1px solid var(--line);margin:0}
+
+/* ── Hero ──────────────────────────────────────────── */
+.hero-brand{display:flex;align-items:center;gap:16px;margin-bottom:32px}
+.mark{width:52px;height:52px;border-radius:13px;position:relative;flex:none;
+ background:radial-gradient(circle at 32% 30%,#3ef0db,#0b8f86 60%,#075c57);
+ box-shadow:0 0 0 1px rgba(62,240,219,.25),0 8px 26px rgba(11,143,134,.4)}
+.mark::after{content:"";position:absolute;inset:0;border-radius:13px;
+ background:repeating-linear-gradient(115deg,transparent 0 6px,rgba(5,17,26,.35) 6px 7px)}
+.wordmark{font-family:'Sora';font-weight:800;font-size:2.4rem;letter-spacing:-.03em;color:#eafbf8}
+.wordmark span{color:var(--cyan)}
+
+.hero h1{font-family:'Sora',sans-serif;font-weight:700;font-size:1.6rem;color:var(--text);line-height:1.45;
+ margin-bottom:12px;max-width:640px;letter-spacing:-.01em}
+.hero .sub{color:var(--muted);font-size:.95rem;line-height:1.6;max-width:560px;margin-bottom:36px}
+
+.cta{display:inline-flex;align-items:center;gap:10px;
+ font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:.95rem;
+ color:var(--abyss);background:linear-gradient(135deg,var(--cyan),var(--cyan-b));
+ padding:14px 30px;border-radius:11px;text-decoration:none;
+ box-shadow:0 0 0 1px rgba(45,212,191,.3),0 8px 28px rgba(45,212,191,.22);
+ transition:.2s}
+.cta:hover{transform:translateY(-2px);box-shadow:0 0 0 1px rgba(45,212,191,.4),0 12px 36px rgba(45,212,191,.30)}
+.cta .arrow{font-size:1.1rem;transition:.15s}
+.cta:hover .arrow{transform:translateX(3px)}
+
+/* ── Stat row ──────────────────────────────────────── */
+.stats{display:flex;gap:32px;margin-top:44px;flex-wrap:wrap}
+.stat .v{font-family:'IBM Plex Mono';font-weight:600;font-size:1.35rem;color:var(--cyan-b);line-height:1}
+.stat .l{font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+
+/* ── Panel cards ───────────────────────────────────── */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+ backdrop-filter:blur(9px);padding:28px 30px}
+
+/* ── Loss table ────────────────────────────────────── */
+.loss-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:20px}
+.loss-card{background:rgba(9,28,38,.6);border:1px solid var(--line);border-radius:11px;padding:18px 16px}
+.loss-card .region{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.loss-card .amount{font-family:'IBM Plex Mono';font-weight:600;font-size:1.3rem;color:var(--high);line-height:1;margin-bottom:6px}
+.loss-card .detail{font-size:.78rem;color:var(--muted);line-height:1.4}
+
+/* ── Solution features ─────────────────────────────── */
+.features{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:20px}
+.feat{background:rgba(9,28,38,.6);border:1px solid var(--line);border-radius:11px;padding:18px 16px}
+.feat .icon{font-size:1.2rem;margin-bottom:10px;display:block}
+.feat .ft{font-family:'Sora',sans-serif;font-weight:600;font-size:.88rem;color:#eafbf8;margin-bottom:6px}
+.feat .fd{font-size:.8rem;color:var(--muted);line-height:1.45}
+
+/* ── Proof metrics ─────────────────────────────────── */
+.proof-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:20px}
+.proof-card{text-align:center;background:rgba(9,28,38,.6);border:1px solid var(--line);border-radius:11px;padding:20px 12px}
+.proof-card .pv{font-family:'IBM Plex Mono';font-weight:600;font-size:1.5rem;color:var(--cyan-b);line-height:1}
+.proof-card .pl{font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:8px;line-height:1.3}
+
+/* ── Moat list ─────────────────────────────────────── */
+.moat-list{list-style:none;margin-top:16px}
+.moat-list li{padding:16px 0;border-bottom:1px solid rgba(255,255,255,.04);display:flex;gap:14px;align-items:flex-start}
+.moat-list li:last-child{border-bottom:none}
+.moat-letter{font-family:'IBM Plex Mono';font-weight:600;font-size:.8rem;color:var(--cyan);
+ width:24px;height:24px;border-radius:6px;border:1px solid var(--line2);
+ display:grid;place-items:center;flex:none;margin-top:2px}
+.moat-text .mt{font-family:'Sora',sans-serif;font-weight:600;font-size:.92rem;color:#eafbf8;margin-bottom:4px}
+.moat-text .md{font-size:.84rem;color:var(--muted);line-height:1.5}
+
+/* ── Roadmap ───────────────────────────────────────── */
+.road-items{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:18px}
+.road-item{display:flex;align-items:center;gap:10px;padding:14px 16px;
+ background:rgba(9,28,38,.6);border:1px solid var(--line);border-radius:10px;font-size:.88rem}
+.road-dot{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);flex:none}
+
+/* ── Honest framing ────────────────────────────────── */
+.framing{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+ padding:28px 30px;margin-top:48px;position:relative;overflow:hidden}
+.framing::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;
+ background:linear-gradient(90deg,transparent,var(--cyan),transparent)}
+.framing p{margin-bottom:0;font-size:.9rem;line-height:1.7;color:var(--muted)}
+.framing strong{color:var(--text)}
+
+/* ── Footer ────────────────────────────────────────── */
+footer{padding:40px 0 60px;text-align:center}
+footer .foot-brand{font-family:'Sora';font-weight:800;font-size:1.1rem;color:#eafbf8;letter-spacing:-.02em;margin-bottom:8px}
+footer .foot-brand span{color:var(--cyan)}
+footer p{color:var(--muted2);font-size:.78rem;margin-bottom:0}
+
+/* ── Animations ────────────────────────────────────── */
+@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+/* Hero items animate immediately via CSS keyframes */
+.hero .reveal{opacity:0;animation:rise .6s ease forwards}
+.hero .reveal:nth-child(1){animation-delay:.05s}
+.hero .reveal:nth-child(2){animation-delay:.15s}
+.hero .reveal:nth-child(3){animation-delay:.25s}
+.hero .reveal:nth-child(4){animation-delay:.35s}
+.hero .reveal:nth-child(5){animation-delay:.45s}
+/* Scroll-reveal for below-fold */
+.scroll-reveal{opacity:0;transform:translateY(16px);transition:opacity .5s ease,transform .5s ease}
+.scroll-reveal.visible{opacity:1;transform:none}
+
+/* ── Responsive ────────────────────────────────────── */
+@media(max-width:768px){
+ section.hero{padding:80px 0 60px}
+ .wordmark{font-size:1.8rem}
+ .hero h1{font-size:1.3rem}
+ .loss-grid,.features,.proof-grid{grid-template-columns:1fr}
+ .road-items{grid-template-columns:1fr}
+ .stats{gap:24px}
+}
+@media(max-width:480px){
+ .wordmark{font-size:1.5rem}
+ .mark{width:42px;height:42px}
+}
+</style>
+</head>
+<body>
+<div class="ambient"></div>
+
+<!-- ═══════════════════════ HERO ═══════════════════════ -->
+<section class="hero">
+<div class="wrap">
+ <div class="hero-brand reveal">
+  <div class="mark"></div>
+  <div class="wordmark">Bloom<span>Cast</span></div>
+ </div>
+ <h1 class="reveal">Harmful algal bloom risk intelligence for coastal operators.</h1>
+ <p class="sub reveal">One unified, multi-site, continuous daily signal — replacing the five fragmented sources you check today.</p>
+ <a href="/demo" class="cta reveal">Launch the live dashboard <span class="arrow">&rarr;</span></a>
+ <div class="stats reveal">
+  <div class="stat"><div class="v">0.91</div><div class="l">AUC &middot; 2018 held out</div></div>
+  <div class="stat"><div class="v">6</div><div class="l">Monitored sites</div></div>
+  <div class="stat"><div class="v">87k+</div><div class="l">Lab samples fused</div></div>
+  <div class="stat"><div class="v">2</div><div class="l">Public data sources</div></div>
+ </div>
+</div>
+</section>
+
+<div class="wrap"><hr class="divider"></div>
+
+<!-- ═══════════════════ THE PROBLEM ═══════════════════ -->
+<section>
+<div class="wrap">
+ <div class="scroll-reveal">
+  <div class="eyebrow">The problem</div>
+  <h2>Coastal operators track red-tide risk across five fragmented sources. None are unified. None are site-specific. All are lagging.</h2>
+  <p>Shellfish and finfish farms, desalination intakes, and beach-tourism authorities currently piece together HAB risk from NOAA bulletins, state agency PDFs, internal spreadsheets, their own grab-sample results, and eyeballed satellite imagery. Each source covers a different geography, updates on a different cadence, and speaks a different language. The result: decisions made on stale, incomplete information.</p>
+  <p class="muted">The economic stakes are real and documented:</p>
+ </div>
+ <div class="loss-grid scroll-reveal">
+  <div class="loss-card">
+   <div class="region">Florida 2017&ndash;2019</div>
+   <div class="amount">$2.7B</div>
+   <div class="detail">Red tide (<em>K. brevis</em>) tourism and fishery losses along the Gulf Coast</div>
+  </div>
+  <div class="loss-card">
+   <div class="region">Chile 2016</div>
+   <div class="amount">$800M</div>
+   <div class="detail">Salmon industry HAB losses from a single catastrophic bloom event</div>
+  </div>
+  <div class="loss-card">
+   <div class="region">US West Coast 2015</div>
+   <div class="amount">$100M</div>
+   <div class="detail">Dungeness crab fishery decline from domoic acid closures</div>
+  </div>
+ </div>
+</div>
+</section>
+
+<div class="wrap"><hr class="divider"></div>
+
+<!-- ═══════════════════ THE SOLUTION ══════════════════ -->
+<section>
+<div class="wrap">
+ <div class="scroll-reveal">
+  <div class="eyebrow">The solution</div>
+  <h2>A unified, multi-site, continuous daily HAB risk-monitoring signal built from public data.</h2>
+  <p>BloomCast fuses FWC <em>Karenia brevis</em> cell-count lab samples with NDBC shelf-buoy environmental readings (wind speed, direction, water temperature) to produce a single daily risk score for each monitored site. No more toggling between five tabs.</p>
+ </div>
+ <div class="features scroll-reveal">
+  <div class="feat">
+   <span class="icon">&#9678;</span>
+   <div class="ft">Multi-site network</div>
+   <div class="fd">Six monitored sites across Florida's Gulf Coast, each with its own calibrated risk signal.</div>
+  </div>
+  <div class="feat">
+   <span class="icon">&#9776;</span>
+   <div class="ft">Two public sources fused</div>
+   <div class="fd">FWC cell-count database and NDBC buoy observations — integrated, cleaned, and gap-filled daily.</div>
+  </div>
+  <div class="feat">
+   <span class="icon">&#9888;</span>
+   <div class="ft">Actionable risk bands</div>
+   <div class="fd">Continuous 0&ndash;100 risk score mapped to clear operational bands: background, low, elevated, high.</div>
+  </div>
+ </div>
+</div>
+</section>
+
+<div class="wrap"><hr class="divider"></div>
+
+<!-- ═══════════════════════ PROOF ═════════════════════ -->
+<section>
+<div class="wrap">
+ <div class="scroll-reveal">
+  <div class="eyebrow">Proof</div>
+  <h2>Validated on a full year held entirely out of training.</h2>
+  <p>The model was trained on 2015&ndash;2017 and 2019&ndash;2023 data. The entire 2018 red-tide season &mdash; the worst in a decade &mdash; was withheld. The risk signal tracked the real bloom accurately.</p>
+ </div>
+ <div class="proof-grid scroll-reveal">
+  <div class="proof-card">
+   <div class="pv">0.91</div>
+   <div class="pl">AUC on 2018<br>held-out year</div>
+  </div>
+  <div class="proof-card">
+   <div class="pv">6</div>
+   <div class="pl">Monitored<br>sites</div>
+  </div>
+  <div class="proof-card">
+   <div class="pv">87,615</div>
+   <div class="pl">Lab samples<br>fused</div>
+  </div>
+  <div class="proof-card">
+   <div class="pv">15,258</div>
+   <div class="pl">Training<br>days</div>
+  </div>
+ </div>
+</div>
+</section>
+
+<div class="wrap"><hr class="divider"></div>
+
+<!-- ═══════════════════ THE MOAT ══════════════════════ -->
+<section>
+<div class="wrap">
+ <div class="scroll-reveal">
+  <div class="eyebrow">The moat</div>
+  <h2>Why this is hard to replicate.</h2>
+ </div>
+ <ul class="moat-list scroll-reveal">
+  <li>
+   <div class="moat-letter">a</div>
+   <div class="moat-text">
+    <div class="mt">Fragmented, ugly data integration</div>
+    <div class="md">State agency cell-count databases and federal buoy feeds are messy, inconsistent, and non-trivial to fuse into a coherent daily signal. We've done the unglamorous work of cleaning, aligning, and gap-filling across sources and geographies.</div>
+   </div>
+  </li>
+  <li>
+   <div class="moat-letter">b</div>
+   <div class="moat-text">
+    <div class="mt">Oceanographic interpretation</div>
+    <div class="md">Translating wind upwelling indices, temperature anomalies, and cell-count dynamics into operational risk requires domain knowledge that generalist data teams get wrong. The feature engineering encodes real coastal oceanography.</div>
+   </div>
+  </li>
+  <li>
+   <div class="moat-letter">c</div>
+   <div class="moat-text">
+    <div class="mt">Data flywheel</div>
+    <div class="md">Every operator's own grab-samples enrich the ground-truthed dataset. As the network grows, the model improves — and eventually unlocks the frontier: true multi-day bloom forecasting from clean-water conditions.</div>
+   </div>
+  </li>
+ </ul>
+</div>
+</section>
+
+<div class="wrap"><hr class="divider"></div>
+
+<!-- ═══════════════════ ROADMAP ═══════════════════════ -->
+<section>
+<div class="wrap">
+ <div class="scroll-reveal">
+  <div class="eyebrow">Roadmap</div>
+  <h2>Where this goes next.</h2>
+ </div>
+ <div class="road-items scroll-reveal">
+  <div class="road-item"><div class="road-dot"></div>Threshold alerts via email and SMS</div>
+  <div class="road-item"><div class="road-dot"></div>More regions and bloom species</div>
+  <div class="road-item"><div class="road-dot"></div>Satellite chlorophyll-a integration</div>
+  <div class="road-item"><div class="road-dot"></div>Parametric HAB insurance products</div>
+ </div>
+</div>
+</section>
+
+<!-- ═══════════════════ HONEST FRAMING ════════════════ -->
+<div class="wrap">
+ <div class="framing scroll-reveal">
+  <p><strong>BloomCast is a risk-monitoring platform, not a long-range forecaster.</strong> Predicting blooms from clean water weeks out is the frontier — and it needs the integrated dataset BloomCast is built to accumulate.</p>
+ </div>
+</div>
+
+<!-- ═══════════════════ FOOTER ════════════════════════ -->
+<footer>
+<div class="wrap">
+ <div class="foot-brand">Bloom<span>Cast</span></div>
+ <p>HAB risk intelligence for coastal operators</p>
+</div>
+</footer>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+ const els = document.querySelectorAll('.scroll-reveal');
+ let batch = [];
+ let raf = null;
+ const flush = () => {
+  batch.forEach((el, i) => {
+   setTimeout(() => el.classList.add('visible'), i * 120);
+  });
+  batch = [];
+ };
+ const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+   if (entry.isIntersecting) {
+    batch.push(entry.target);
+    observer.unobserve(entry.target);
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(flush);
+   }
+  });
+ }, { threshold: 0.08, rootMargin: '0px 0px -20px 0px' });
+ els.forEach(el => observer.observe(el));
+});
+</script>
+</body>
+</html>
