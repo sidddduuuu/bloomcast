@@ -88,6 +88,10 @@ td{padding:8px;border-bottom:1px solid rgba(255,255,255,.04);font-family:'IBM Pl
 footer{margin-top:18px;padding:18px 22px;background:var(--panel);border:1px solid var(--line);border-radius:14px;font-size:.84rem;color:var(--muted);line-height:1.6}
 footer b{color:var(--text)}footer .hl{color:var(--cyan-b)}
 @keyframes rise{from{opacity:0;transform:translateY(13px)}to{opacity:1;transform:none}}
+.verdict{background:var(--panel);border:1px solid var(--line);border-radius:14px;backdrop-filter:blur(9px);padding:18px 22px;margin-bottom:16px;border-left:4px solid var(--low);opacity:0;animation:rise .6s .18s forwards;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+.verdict .vword{font-family:'Sora';font-weight:800;font-size:2rem;letter-spacing:.01em;line-height:1}
+.verdict .vline{font-size:.92rem;color:var(--text);flex:1;min-width:260px;line-height:1.5}
+.verdict .vdisc{width:100%;font-size:.66rem;color:var(--muted2);line-height:1.4;margin-top:2px}
 @media(max-width:1000px){.grid,.grid2{grid-template-columns:1fr}.network{grid-template-columns:repeat(3,1fr)}.tag{display:none}}
 </style>
 </head>
@@ -117,6 +121,12 @@ footer b{color:var(--text)}footer .hl{color:var(--cyan-b)}
   </div>
 
   <div class="network" id="network"></div>
+
+  <div class="verdict" id="verdict">
+    <span class="vword" id="vWord"></span>
+    <span class="vline" id="vLine"></span>
+    <span class="vdisc">Risk-based operational guidance — a complement to official state closure notices, not a replacement.</span>
+  </div>
 
   <div class="grid">
     <div class="col">
@@ -213,18 +223,25 @@ function renderDrivers(dr){const max=Math.max(1,...dr.map(Math.abs));let h='';dr
 
 function renderTable(){const S=series(state.site,state.year);const doy=S[state.idx].doy;const rows=S.filter(r=>r.obs!=null&&r.doy<=doy).slice(-12).reverse();let h='';for(const r of rows){const cc=cat(r.max);h+='<tr><td>'+mmdd(r.d)+'</td><td>'+r.max.toLocaleString('en-US')+'</td><td><span class="chip" style="background:'+cc[1]+'22;color:'+cc[1]+'">'+cc[0]+'</span></td></tr>'}document.getElementById('tbody').innerHTML=h||'<tr><td colspan=3 style="color:#52707d">No samples yet this season</td></tr>';document.getElementById('tblMeta').textContent=DATA.sites.find(s=>s.id===state.site).name}
 
-function renderNetwork(){const net=document.getElementById('network');net.innerHTML='';DATA.sites.forEach(s=>{const arr=series(s.id,state.year);const r=arr[Math.min(state.idx,arr.length-1)];const v=r.risk==null?0:r.risk;const col=riskCol(v);const band=v<40?'low':v<70?'elevated':'high';const d=document.createElement('div');d.className='scard'+(s.id===state.site?' active':'');d.innerHTML='<div class="nm">'+s.name+'</div><div class="rk" style="color:'+col+'">'+Math.round(v)+'</div><div class="bd" style="color:'+col+'">'+band+'</div>';d.onclick=()=>{state.site=s.id;siteSel.value=s.id;renderAll()};net.appendChild(d)})}
+const verdict=v=>v<40?'HARVEST OK':v<70?'CAUTION':'HOLD';
+function renderNetwork(){const net=document.getElementById('network');net.innerHTML='';DATA.sites.forEach(s=>{const arr=series(s.id,state.year);const r=arr[Math.min(state.idx,arr.length-1)];const v=r.risk==null?0:r.risk;const col=riskCol(v);const d=document.createElement('div');d.className='scard'+(s.id===state.site?' active':'');d.innerHTML='<div class="nm">'+s.name+'</div><div class="rk" style="color:'+col+'">'+Math.round(v)+'</div><div class="bd" style="color:'+col+'">'+verdict(v)+'</div>';d.onclick=()=>{state.site=s.id;siteSel.value=s.id;renderAll()};net.appendChild(d)})}
 
 function renderExposure(risk){const v=+document.getElementById('assetVal').value||0;const f=risk<40?.03:risk<70?.18:.45;const ex=v*f;const el=document.getElementById('exposure');el.textContent='$'+Math.round(ex).toLocaleString('en-US');el.style.color=riskCol(risk)}
 
 function renderAlert(risk){const thr=+document.getElementById('thr').value;document.getElementById('thrVal').textContent=thr;const box=document.getElementById('alertBox');const on=risk>=thr;box.style.background=on?'rgba(251,94,109,.14)':'rgba(52,211,153,.12)';box.style.color=on?'#fb5e6d':'#34d399';box.innerHTML=(on?'&#9888; ':'&#10003; ')+(on?'ALERT — risk '+Math.round(risk)+' \u2265 '+thr:'Normal — risk '+Math.round(risk)+' below '+thr);const S=series(state.site,state.year);const days=S.filter(r=>r.risk!=null&&r.risk>=thr).length;document.getElementById('alertDays').textContent='Days above threshold this season: '+days}
+
+function renderVerdict(risk,siteName,dateStr){const el=document.getElementById('verdict');const vw=document.getElementById('vWord');const vl=document.getElementById('vLine');const vd=verdict(risk);const col=riskCol(risk);const cssVar=risk<40?'--low':risk<70?'--mid':'--high';vw.textContent=vd;vw.style.color=css(cssVar);el.style.borderLeftColor=css(cssVar);
+ if(vd==='HOLD')vl.textContent='Red tide risk is HIGH at '+siteName+' as of '+dateStr+'. Recommend holding harvest.';
+ else if(vd==='CAUTION')vl.textContent='Elevated red tide risk at '+siteName+' as of '+dateStr+'. Increase sampling before harvest.';
+ else vl.textContent='Low red tide risk at '+siteName+' as of '+dateStr+'. Conditions clear for normal operations.'}
 
 function renderAll(){const S=series(state.site,state.year);const r=S[state.idx];document.getElementById('dm').textContent=mmdd(r.d);document.getElementById('yrLab').textContent=state.year+' · '+DATA.sites.find(s=>s.id===state.site).name.toUpperCase();document.getElementById('dayCount').textContent='day '+(state.idx+1)+' / '+S.length;document.getElementById('scrub').value=state.idx;
  const v=r.risk==null?0:r.risk;const band=v<40?['LOW','--low']:v<70?['ELEVATED','--mid']:['HIGH','--high'];const bl=document.getElementById('bandLab');bl.textContent='RISK: '+band[0];bl.style.color=css(band[1]);
  document.getElementById('sampleVal').innerHTML=r.obs==null?'<span class="val dim">no sample · nowcast</span>':r.obs.toLocaleString('en-US')+' <span style="font-size:.7rem;color:#52707d">cells/L</span>';
  document.getElementById('wtmpVal').textContent=r.wtmp==null?'—':r.wtmp.toFixed(1)+' °C';
  document.getElementById('tlTitle').textContent=(state.year===2018?'Risk vs. real bloom — 2018 (held out)':'Risk vs. real bloom — '+state.year);
- renderGauge(v);renderTimeline();renderMap();renderDrivers(r.dr||[0,0,0,0,0]);renderTable();renderNetwork();renderExposure(v);renderAlert(v);}
+ const siteName=DATA.sites.find(s=>s.id===state.site).name;const dateStr=mmdd(r.d)+' '+state.year;
+ renderGauge(v);renderTimeline();renderMap();renderDrivers(r.dr||[0,0,0,0,0]);renderTable();renderNetwork();renderExposure(v);renderAlert(v);renderVerdict(v,siteName,dateStr);}
 
 document.getElementById('scrub').oninput=e=>{state.idx=+e.target.value;renderAll()};
 document.getElementById('assetVal').oninput=()=>{const r=series(state.site,state.year)[state.idx];renderExposure(r.risk==null?0:r.risk)};
