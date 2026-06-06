@@ -1,0 +1,8 @@
+{
+  "outputDirectory": "site",
+  "buildCommand": "",
+  "framework": null,
+  "rewrites": [
+    { "source": "/demo", "destination": "/demo/index.html" }
+  ]
+}
